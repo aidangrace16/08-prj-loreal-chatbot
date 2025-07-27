@@ -14,7 +14,6 @@ If your reply is long, format it in clear paragraphs with spaces between them fo
 
 
 
-
 // Store the conversation history
 const messages = [systemPrompt];
 
@@ -22,6 +21,10 @@ const messages = [systemPrompt];
 const chatForm = document.getElementById("chatForm");
 const userInput = document.getElementById("userInput");
 const chatWindow = document.getElementById("chatWindow");
+
+// Add this style to chatWindow for vertical stacking
+chatWindow.style.display = "flex";
+chatWindow.style.flexDirection = "column";
 
 // Show initial greeting from the chatbot
 chatWindow.innerHTML = `<div class="msg ai">👋 Hello! How can I help you with L'Oréal products or routines today?</div>`;
@@ -69,14 +72,18 @@ chatForm.addEventListener("submit", async (e) => {
     // Convert Markdown bold to HTML
     const aiMsgHtml = markdownToHtml(aiMsg);
 
-    // Remove loading message and show AI reply
-    // (Replace last .msg.ai with the actual reply)
+    // Remove loading message and show AI reply with animation
     const msgs = chatWindow.querySelectorAll(".msg.ai");
+    let aiMsgDiv;
     if (msgs.length) {
-      msgs[msgs.length - 1].innerHTML = aiMsgHtml;
+      aiMsgDiv = msgs[msgs.length - 1];
+      aiMsgDiv.innerHTML = ""; // Clear loading text
     } else {
-      chatWindow.innerHTML += `<div class="msg ai">${aiMsgHtml}</div>`;
+      chatWindow.innerHTML += `<div class="msg ai"></div>`;
+      aiMsgDiv = chatWindow.querySelectorAll(".msg.ai")[chatWindow.querySelectorAll(".msg.ai").length - 1];
     }
+    typeText(aiMsgDiv, aiMsgHtml, 18); // Animate response
+
     chatWindow.scrollTop = chatWindow.scrollHeight;
   } catch (err) {
     // Show error message
@@ -89,4 +96,37 @@ chatForm.addEventListener("submit", async (e) => {
 function markdownToHtml(text) {
   // Replace **text** with <strong>text</strong>
   return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
+
+// Helper function to animate chatbot text
+function typeText(element, htmlText, speed = 18) {
+  // Split the HTML into text and tags
+  let i = 0;
+  let isTag = false;
+  let output = '';
+  function type() {
+    if (i < htmlText.length) {
+      if (htmlText[i] === '<') isTag = true;
+      if (isTag) {
+        // Add full tag at once
+        let tag = '';
+        while (htmlText[i] !== '>' && i < htmlText.length) {
+          tag += htmlText[i];
+          i++;
+        }
+        tag += '>';
+        output += tag;
+        i++;
+        isTag = false;
+      } else {
+        output += htmlText[i];
+        i++;
+      }
+      element.innerHTML = output + '<span class="blinker">|</span>';
+      setTimeout(type, speed);
+    } else {
+      element.innerHTML = output; // Remove blinker at end
+    }
+  }
+  type();
 }
